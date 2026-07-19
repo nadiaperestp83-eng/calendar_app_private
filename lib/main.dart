@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/home_screen.dart';
 import 'services/isar_service.dart';
@@ -24,7 +25,13 @@ class CalendarApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        fontFamily: 'SF Pro Display', // troque pela fonte que preferir
+        // Inter é a fonte do Google Fonts com a métrica mais próxima da
+        // SF Pro (fonte nativa do iOS Calendar). Lembrete: por vir do
+        // pacote google_fonts, ela é baixada da internet no 1º uso —
+        // você optou por manter assim (ver aviso no pubspec.yaml).
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData(brightness: Brightness.dark).textTheme,
+        ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF7B6EF6),
           brightness: Brightness.dark,
