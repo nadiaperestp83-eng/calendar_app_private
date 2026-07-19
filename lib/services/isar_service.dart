@@ -44,6 +44,11 @@ class IsarService {
     return id;
   }
 
+  /// Alias semântico de [add], usado pelas telas de formulário
+  /// (ex.: NovaConsultaScreen) para deixar explícito que a ação
+  /// é "salvar o evento que o usuário acabou de preencher".
+  Future<int> salvarEvento(Evento evento) => add(evento);
+
   // ---------------------------------------------------------------------
   // DELETE
   // ---------------------------------------------------------------------
