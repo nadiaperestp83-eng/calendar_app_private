@@ -4,7 +4,7 @@ import '../models/evento.dart';
 import '../services/isar_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/date_selector_sheet.dart';
-import '../theme/apple_calendar_colors.dart';
+import 'nova_consulta_screen.dart';
 
 /// Tela inicial "Focus-First".
 ///
@@ -255,108 +255,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _abrirNovoEvento() {
-    // Placeholder simples de criação rápida — substitua por uma tela
-    // dedicada (ex.: NovoEventoScreen) seguindo a mesma estética glass.
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black87,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        final controller = TextEditingController();
-        Color corEscolhida = AppleCalendarColors.padrao;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      hintText: 'Título do evento',
-                      hintStyle: TextStyle(color: Colors.white38),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Cor',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 10),
-                  // Seletor de cor no padrão Apple Calendar
-                  SizedBox(
-                    height: 40,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: AppleCalendarColors.paleta.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, index) {
-                        final item = AppleCalendarColors.paleta[index];
-                        final cor = item.value;
-                        final selecionada = cor.value == corEscolhida.value;
-                        return GestureDetector(
-                          onTap: () =>
-                              setModalState(() => corEscolhida = cor),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: cor,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: selecionada ? 2.5 : 0,
-                              ),
-                            ),
-                            child: selecionada
-                                ? const Icon(Icons.check,
-                                    size: 16, color: Colors.white)
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (controller.text.trim().isEmpty) return;
-                      final novo = Evento.novo(
-                        titulo: controller.text.trim(),
-                        dataHoraInicio: DateTime(
-                          _dataSelecionada.year,
-                          _dataSelecionada.month,
-                          _dataSelecionada.day,
-                          DateTime.now().hour,
-                          DateTime.now().minute,
-                        ),
-                        corTint: corEscolhida.value,
-                      );
-                      await IsarService.instance.add(novo);
-                      if (mounted) Navigator.pop(context);
-                      _carregarEventos();
-                    },
-                    child: const Text('Adicionar'),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  Future<void> _abrirNovoEvento() async {
+    // Tela cheia dedicada (NovaConsultaScreen), com blur real sobre
+    // esta tela e formulário completo (data, hora, local, categoria).
+    final salvou = await NovaConsultaScreen.show(
+      context,
+      dataInicial: _dataSelecionada,
     );
+    if (salvou == true) {
+      _carregarEventos();
+    }
   }
 }
