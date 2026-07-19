@@ -4,6 +4,7 @@ import '../models/evento.dart';
 import '../services/isar_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/date_selector_sheet.dart';
+import '../widgets/hero_day_card.dart';
 import 'nova_consulta_screen.dart';
 
 /// Tela inicial "Focus-First".
@@ -112,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     parent: BouncingScrollPhysics(),
                   ),
                   slivers: [
-                    SliverToBoxAdapter(child: _buildCabecalho()),
+                    SliverToBoxAdapter(child: _buildHero()),
                     if (_carregando)
                       const SliverFillRemaining(
                         hasScrollBody: false,
@@ -173,32 +174,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCabecalho() {
+  Widget _buildHero() {
     final ehHoje = _ehHoje(_dataSelecionada);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 90, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            ehHoje ? 'Hoje' : _diasSemana[_dataSelecionada.weekday % 7],
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.2,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${_dataSelecionada.day} de ${_meses[_dataSelecionada.month - 1]} de ${_dataSelecionada.year}',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.75),
-              fontSize: 15,
-            ),
-          ),
-        ],
-      ),
+    final titulo = ehHoje ? 'Hoje' : _diasSemana[_dataSelecionada.weekday % 7];
+    final subtitulo =
+        '${_dataSelecionada.day} de ${_meses[_dataSelecionada.month - 1]} de ${_dataSelecionada.year}';
+
+    return HeroDayCard(
+      titulo: titulo,
+      subtitulo: subtitulo,
+      quantidadeEventos: _eventosDoDia.length,
     );
   }
 
