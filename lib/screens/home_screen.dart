@@ -4,6 +4,7 @@ import '../models/evento.dart';
 import '../services/isar_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/date_selector_sheet.dart';
+import '../theme/apple_calendar_colors.dart';
 
 /// Tela inicial "Focus-First".
 ///
@@ -73,24 +74,25 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Imagem de fundo (estática ou dinâmica conforme período do dia).
-          // Troque por Image.network/Image.file se quiser fundo dinâmico —
-          // desde que a fonte continue local, sem telemetria embutida.
-          Image.asset(
-            'assets/images/fundo_dia.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF3A1C71), Color(0xFFD76D77)],
-                ),
+          // Fundo: gradiente sutil gerado por código (sem asset de imagem).
+          // Neutro e escuro, no espírito do Apple Calendar em modo escuro,
+          // com só um leve toque de cor para o blur do glass ter o que
+          // desfocar. Nenhum arquivo externo é necessário.
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1C1C1E), // cinza-quase-preto (system background dark)
+                  Color(0xFF232326),
+                  Color(0xFF17171A),
+                ],
+                stops: [0.0, 0.55, 1.0],
               ),
             ),
+            child: SizedBox.expand(),
           ),
-          // Camada de escurecimento para legibilidade do texto
-          Container(color: Colors.black.withOpacity(0.25)),
 
           // Gesto de swipe-down para revelar o seletor de mês
           GestureDetector(
@@ -264,48 +266,95 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       builder: (context) {
         final controller = TextEditingController();
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: controller,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: 'Título do evento',
-                  hintStyle: TextStyle(color: Colors.white38),
-                ),
+        Color corEscolhida = AppleCalendarColors.padrao;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  if (controller.text.trim().isEmpty) return;
-                  final novo = Evento.novo(
-                    titulo: controller.text.trim(),
-                    dataHoraInicio: DateTime(
-                      _dataSelecionada.year,
-                      _dataSelecionada.month,
-                      _dataSelecionada.day,
-                      DateTime.now().hour,
-                      DateTime.now().minute,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Título do evento',
+                      hintStyle: TextStyle(color: Colors.white38),
                     ),
-                  );
-                  await IsarService.instance.add(novo);
-                  if (mounted) Navigator.pop(context);
-                  _carregarEventos();
-                },
-                child: const Text('Adicionar'),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Cor',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 10),
+                  // Seletor de cor no padrão Apple Calendar
+                  SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: AppleCalendarColors.paleta.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      itemBuilder: (context, index) {
+                        final item = AppleCalendarColors.paleta[index];
+                        final cor = item.value;
+                        final selecionada = cor.value == corEscolhida.value;
+                        return GestureDetector(
+                          onTap: () =>
+                              setModalState(() => corEscolhida = cor),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: cor,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: selecionada ? 2.5 : 0,
+                              ),
+                            ),
+                            child: selecionada
+                                ? const Icon(Icons.check,
+                                    size: 16, color: Colors.white)
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (controller.text.trim().isEmpty) return;
+                      final novo = Evento.novo(
+                        titulo: controller.text.trim(),
+                        dataHoraInicio: DateTime(
+                          _dataSelecionada.year,
+                          _dataSelecionada.month,
+                          _dataSelecionada.day,
+                          DateTime.now().hour,
+                          DateTime.now().minute,
+                        ),
+                        corTint: corEscolhida.value,
+                      );
+                      await IsarService.instance.add(novo);
+                      if (mounted) Navigator.pop(context);
+                      _carregarEventos();
+                    },
+                    child: const Text('Adicionar'),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
