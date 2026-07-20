@@ -2,17 +2,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'landscape_painter.dart';
+import 'texture_painters.dart';
 import '../theme/app_design_tokens.dart';
 
 /// Card "Hero" do dia atual — fica no topo da HomeScreen.
 ///
 /// Fundo: paisagem 100% gerada por código (LandscapePainter), variando
-/// pela hora do dia. Por cima, um gradiente interno INVERTIDO em
-/// relação ao fundo do Scaffold (que vai de azul-noturno no topo para
-/// roxo-noturno na base) — aqui o card vai do roxo mais claro no topo
-/// para o azul mais profundo na base, criando a ilusão óptica de uma
-/// "janela" para um espaço mais profundo, em vez de um elemento colado
-/// por cima do fundo.
+/// pela hora do dia. Por cima, um gradiente "janela" pintado manualmente
+/// com dither (sem banding) + uma camada de ruído sutil (textura fosca),
+/// dando um acabamento de altíssima qualidade em vez de "código liso".
 class HeroDayCard extends StatelessWidget {
   const HeroDayCard({
     super.key,
@@ -32,14 +30,16 @@ class HeroDayCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Container(
-        // BoxShadow leve para dar profundidade ao card sobre o gradiente.
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(kBorderRadius),
+          // Sombra realista: blur alto, sem espalhamento (spread 0),
+          // preta a 30% — o card parece flutuar sobre o degradê de fundo.
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 0,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -54,9 +54,10 @@ class HeroDayCard extends StatelessWidget {
                 CustomPaint(painter: LandscapePainter(periodo: periodo)),
 
                 // Efeito "janela": gradiente interno invertido em
-                // relação ao fundo do Scaffold (kGradienteTopo/Base).
-                DecoratedBox(
-                  decoration: BoxDecoration(
+                // relação ao fundo do Scaffold, agora pintado com
+                // dither: true (elimina banding de cor).
+                CustomPaint(
+                  painter: DitheredGradientPainter(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -66,6 +67,13 @@ class HeroDayCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+
+                // Textura de ruído (grain) sutil — acabamento "fosco",
+                // remove o aspecto artificial de gradiente liso demais.
+                Opacity(
+                  opacity: 0.05,
+                  child: CustomPaint(painter: NoiseOverlayPainter()),
                 ),
 
                 // Véu de vidro fosco bem sutil sobre a paisagem
@@ -114,7 +122,6 @@ class HeroDayCard extends StatelessWidget {
                             horizontal: 10, vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            // Acento índigo só aqui, no badge de destaque.
                             color: kCorAcento.withOpacity(0.28),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
