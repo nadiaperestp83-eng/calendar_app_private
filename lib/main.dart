@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/home_screen.dart';
 import 'services/isar_service.dart';
+import 'theme/app_design_tokens.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +34,7 @@ class CalendarApp extends StatelessWidget {
           ThemeData(brightness: Brightness.dark).textTheme,
         ),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7B6EF6),
+          seedColor: kCorAcento,
           brightness: Brightness.dark,
         ),
       ),
