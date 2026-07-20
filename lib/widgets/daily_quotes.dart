@@ -1,38 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:daily_quotes/daily_quotes.dart';
 
 /// Exibida no lugar do estado vazio quando o dia selecionado não tem
 /// nenhum evento — um convite ao descanso/reflexão, não um "vazio".
 ///
-/// A frase é escolhida de forma determinística a partir do dia do ano,
-/// então ela não muda a cada rebuild, mas varia dia a dia.
-class DailyQuotes extends StatelessWidget {
-  const DailyQuotes({super.key, this.data});
+/// Usa o pacote `daily_quotes` (pub.dev, ^0.0.1) — 100% local/offline,
+/// sem chamada de rede. A frase é sorteada uma única vez na criação do
+/// widget (initState/late final) e fica fixa enquanto ele existir na
+/// árvore, evitando que ela mude a cada rebuild/AnimatedSwitcher.
+class DailyQuotes extends StatefulWidget {
+  const DailyQuotes({super.key});
 
-  /// Data usada para escolher a frase. Se omitida, usa hoje.
-  final DateTime? data;
+  @override
+  State<DailyQuotes> createState() => _DailyQuotesState();
+}
 
-  static const List<String> _frases = [
-    'A simplicidade é o último grau de sofisticação.',
-    'Um dia livre também é produtivo.',
-    'Nada agendado. Só espaço pra respirar.',
-    'O silêncio na agenda também é um presente.',
-    'Menos compromissos, mais presença.',
-    'Hoje o tempo é todo seu.',
-    'Descansar também está na lista.',
-    'Um respiro no calendário.',
-  ];
+class _DailyQuotesState extends State<DailyQuotes> {
+  // getRandomQuote() do pacote daily_quotes — sorteada uma vez só.
+  late final String _frase = getRandomQuote().toString();
 
   @override
   Widget build(BuildContext context) {
-    final referencia = data ?? DateTime.now();
-    final indice = referencia.difference(DateTime(referencia.year)).inDays %
-        _frases.length;
-    final frase = _frases[indice];
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Text(
-        frase,
+        _frase,
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withOpacity(0.7),
