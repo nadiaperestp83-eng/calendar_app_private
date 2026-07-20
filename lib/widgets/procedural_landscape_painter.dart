@@ -2,95 +2,95 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../shaders/landscape_params.dart';
-import '../shaders/landscape_shader_controller.dart';
-import 'procedural_landscape_painter.dart';
-import 'package:flutter/scheduler.dart';
 
-
-/// Widget "pronto para usar": carrega `landscape.frag`, mantém uma única
-/// instância de [ui.FragmentShader] viva (evita recompilar/realocar a cada
-/// rebuild) e desenha a paisagem via [ProceduralLandscapePainter].
+/// `CustomPainter` que desenha a paisagem procedural usando o
+/// `dart:ui.FragmentShader` compilado a partir de `landscape.frag`.
 ///
-/// Uso (substitui `CustomPaint(painter: LandscapePainter(periodo: periodo))`):
-/// ```dart
-/// ProceduralLandscape(
-///   params: LandscapeParams.fromDate(DateTime.now()),
-/// )
-/// ```
-class ProceduralLandscape extends StatefulWidget {
-  const ProceduralLandscape({
-    super.key,
+/// Não usa `flutter_shaders`/`AnimatedSampler` de propósito: essa API serve
+/// para capturar um widget/imagem filho como `sampler2D` de entrada do
+/// shader, e esta cena não usa nenhum `sampler2D` — é 100% matemática. O
+/// `CustomPainter` nativo entrega exatamente o mesmo resultado (um
+/// `Canvas.drawRect` com `Paint()..shader = shader`) sem adicionar
+/// dependência nenhuma.
+class ProceduralLandscapePainter extends CustomPainter {
+  ProceduralLandscapePainter({
+    required this.shader,
     required this.params,
-    this.animate = true,
-  });
+    this.time = 0.0,
+  }) : super(repaint: null);
+
+  /// Instância já criada via `program.fragmentShader()`. O ideal é manter
+  /// UMA instância viva por widget (ver `ProceduralLandscape` abaixo) e só
+  /// atualizar os uniforms a cada repaint — criar uma instância nova por
+  /// frame tem custo desnecessário.
+  final ui.FragmentShader shader;
 
   final LandscapeParams params;
 
-  /// Se `true`, mantém um `Ticker` leve rodando só para o brilho sutil das
-  /// estrelas/god-rays (não afeta a geometria do terreno, que é estática).
-  /// Desligue para economizar bateria se a animação não for essencial.
-  final bool animate;
+  /// Segundos desde o início da animação — usado só para o brilho sutil
+  /// das estrelas / god-rays. Pode ficar fixo (0.0) se preferir uma cena
+  /// totalmente estática (mais barato ainda).
+  final double time;
 
   @override
-  State<ProceduralLandscape> createState() => _ProceduralLandscapeState();
-}
-
-class _ProceduralLandscapeState extends State<ProceduralLandscape>
-    with SingleTickerProviderStateMixin {
-  ui.FragmentShader? _shader;
-  Ticker? _ticker;
-  double _time = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadShader();
-    if (widget.animate) {
-      _ticker = createTicker((elapsed) {
-        setState(() => _time = elapsed.inMilliseconds / 1000.0);
-      })..start();
-    }
+  void paint(Canvas canvas, Size size) {
+    _setUniforms(size);
+    final paint = Paint()..shader = shader;
+    canvas.drawRect(Offset.zero & size, paint);
   }
 
-  Future<void> _loadShader() async {
-    final program = await LandscapeShaderController.program();
-    if (!mounted) return;
-    setState(() => _shader = program.fragmentShader());
+  /// Envia todos os uniforms para o shader, NA MESMA ORDEM em que foram
+  /// declarados em `landscape.frag`. Um `vec2`/`vec3` consome 2/3 chamadas
+  /// consecutivas de `setFloat`.
+  void _setUniforms(Size size) {
+    var i = 0;
+    void f(double v) => shader.setFloat(i++, v);
+
+    // uSize
+    f(size.width);
+    f(size.height);
+
+    // uTime
+    f(time);
+
+    // uSeed
+    f(params.seed);
+
+    // uScenario
+    f(params.scenario.uniformValue);
+
+    // uSunDir
+    f(params.sunDir.dx);
+    f(params.sunDir.dy);
+
+    // uSkyTop / uSkyBottom
+    _setColor(f, params.skyTop);
+    _setColor(f, params.skyBottom);
+
+    // uGrassColor / uRockColor
+    _setColor(f, params.grassColor);
+    _setColor(f, params.rockColor);
+
+    // uHazeColor
+    _setColor(f, params.hazeColor);
+
+    // uSunColor
+    _setColor(f, params.sunColor);
+
+    // uIsNight
+    f(params.isNight ? 1.0 : 0.0);
+  }
+
+  static void _setColor(void Function(double) f, Color c) {
+    f(c.red / 255.0);
+    f(c.green / 255.0);
+    f(c.blue / 255.0);
   }
 
   @override
-  void dispose() {
-    _ticker?.dispose();
-    // FragmentShader não expõe dispose() na API pública estável — o GC do
-    // engine cuida da liberação quando a última referência Dart some.
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final shader = _shader;
-    if (shader == null) {
-      // Primeiro frame antes do shader compilar (raríssimo se você chamar
-      // LandscapeShaderController.preload() no boot do app) — usa um
-      // gradiente estático simples como placeholder, sem imagens.
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [widget.params.skyTop, widget.params.skyBottom],
-          ),
-        ),
-      );
-    }
-
-    return CustomPaint(
-      painter: ProceduralLandscapePainter(
-        shader: shader,
-        params: widget.params,
-        time: _time,
-      ),
-      size: Size.infinite,
-    );
+  bool shouldRepaint(covariant ProceduralLandscapePainter oldDelegate) {
+    return oldDelegate.params != params ||
+        oldDelegate.time != time ||
+        oldDelegate.shader != shader;
   }
 }
