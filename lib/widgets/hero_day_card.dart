@@ -5,9 +5,14 @@ import 'landscape_painter.dart';
 import '../theme/app_design_tokens.dart';
 
 /// Card "Hero" do dia atual — fica no topo da HomeScreen.
+///
 /// Fundo: paisagem 100% gerada por código (LandscapePainter), variando
-/// pela hora do dia. Por cima, um leve véu de vidro fosco + gradiente
-/// escuro na base para garantir legibilidade do texto.
+/// pela hora do dia. Por cima, um gradiente interno INVERTIDO em
+/// relação ao fundo do Scaffold (que vai de azul-noturno no topo para
+/// roxo-noturno na base) — aqui o card vai do roxo mais claro no topo
+/// para o azul mais profundo na base, criando a ilusão óptica de uma
+/// "janela" para um espaço mais profundo, em vez de um elemento colado
+/// por cima do fundo.
 class HeroDayCard extends StatelessWidget {
   const HeroDayCard({
     super.key,
@@ -48,10 +53,25 @@ class HeroDayCard extends StatelessWidget {
                 // Paisagem gerada via CustomPainter — sem asset.
                 CustomPaint(painter: LandscapePainter(periodo: periodo)),
 
+                // Efeito "janela": gradiente interno invertido em
+                // relação ao fundo do Scaffold (kGradienteTopo/Base).
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        kGradienteBase.withOpacity(0.28),
+                        kGradienteTopo.withOpacity(0.42),
+                      ],
+                    ),
+                  ),
+                ),
+
                 // Véu de vidro fosco bem sutil sobre a paisagem
                 BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                  child: Container(color: Colors.black.withOpacity(0.06)),
+                  child: Container(color: Colors.black.withOpacity(0.05)),
                 ),
 
                 // Gradiente escuro na base, para o texto ficar legível
@@ -69,8 +89,8 @@ class HeroDayCard extends StatelessWidget {
                   ),
                 ),
 
-                // Borda interna quase branca, opacidade 10% — define
-                // o contorno do efeito de vidro sem chamar atenção demais.
+                // Borda interna muito fina, quase branca, 10% —
+                // "vidro esculpido no degradê", não colado por cima.
                 DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(kBorderRadius),
@@ -94,8 +114,12 @@ class HeroDayCard extends StatelessWidget {
                             horizontal: 10, vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.22),
+                            // Acento índigo só aqui, no badge de destaque.
+                            color: kCorAcento.withOpacity(0.28),
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: kCorAcento.withOpacity(0.4),
+                            ),
                           ),
                           child: Text(
                             quantidadeEventos == 1
@@ -115,10 +139,8 @@ class HeroDayCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 34,
-                          // Peso leve + letterSpacing maior = visual
-                          // mais elegante, "Apple-like".
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.4,
                           shadows: [
                             Shadow(color: Colors.black45, blurRadius: 12),
                           ],
@@ -128,7 +150,7 @@ class HeroDayCard extends StatelessWidget {
                       Text(
                         subtitulo,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withOpacity(0.85),
                           fontSize: 14,
                           fontWeight: FontWeight.w300,
                           letterSpacing: 0.4,
