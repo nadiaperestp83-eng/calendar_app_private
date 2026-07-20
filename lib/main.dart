@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/home_screen.dart';
 import 'services/isar_service.dart';
+import 'shaders/landscape_shader_controller.dart';
 import 'theme/app_design_tokens.dart';
 
 void main() async {
@@ -11,6 +12,11 @@ void main() async {
   // Abre o banco local ANTES de renderizar a UI.
   // Nenhuma chamada de rede acontece aqui — 100% offline.
   await IsarService.instance.db;
+
+  // Compila o fragment shader da paisagem procedural durante o boot, para
+  // que o HeroDayCard já apareça pronto no primeiro frame (sem o
+  // placeholder de gradiente estático).
+  await LandscapeShaderController.preload();
 
   runApp(const CalendarApp());
 }
