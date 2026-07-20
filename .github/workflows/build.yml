@@ -15,23 +15,26 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.6'
           channel: 'stable'
           cache: true
-      - run: flutter pub get
-      - run: flutter analyze
-
 
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Gerar código do Isar (evento.g.dart)
+      - name: Gerar código (Isar)
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
-      - name: Analisar (flutter analyze)
+      - name: Analisar código
         run: flutter analyze
 
       - name: Rodar testes
@@ -61,7 +64,7 @@ jobs:
       - name: Instalar dependências
         run: flutter pub get
 
-      - name: Gerar código do Isar (evento.g.dart)
+      - name: Gerar código (Isar)
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Build APK (release)
