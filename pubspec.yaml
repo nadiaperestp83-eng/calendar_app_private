@@ -82,6 +82,14 @@ flutter:
   assets:
     - assets/illustrations/
 
+  # Fragment shaders GLSL — compilados pelo impellerc no build (flutter
+  # build/run), NÃO vão na seção `assets:` acima. `dart:ui.FragmentProgram`
+  # requer Flutter >= 3.10 (o `environment.sdk` no topo deste arquivo
+  # também precisa permitir Dart 3, ex: '>=3.0.0 <4.0.0' — o projeto está
+  # em '>=2.19.6 <3.0.0', que é anterior ao suporte estável a shaders).
+  shaders:
+    - assets/shaders/landscape.frag
+
   # Se optar por empacotar fontes localmente (ver aviso do google_fonts
   # acima), descomente e ajuste:
   # fonts:
