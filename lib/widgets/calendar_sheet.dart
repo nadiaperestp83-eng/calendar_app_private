@@ -21,10 +21,15 @@ class CalendarSheet extends StatefulWidget {
     super.key,
     required this.dataSelecionada,
     required this.onDataSelecionada,
+    this.onExtentChanged,
   });
 
   final DateTime dataSelecionada;
   final ValueChanged<DateTime> onDataSelecionada;
+
+  /// Notifica a extensão atual do sheet (0.0–1.0) a cada mudança
+  /// perceptível — usado pela HomeScreen para o fade da DailyQuotes.
+  final ValueChanged<double>? onExtentChanged;
 
   @override
   State<CalendarSheet> createState() => _CalendarSheetState();
@@ -72,6 +77,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
     // durante o arraste.
     if ((novoExtent - _extent).abs() > 0.01) {
       setState(() => _extent = novoExtent);
+      widget.onExtentChanged?.call(novoExtent);
     }
   }
 
