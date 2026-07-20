@@ -1,44 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:daily_quotes/daily_quotes.dart' as pkg;
 
 /// Exibida no lugar do estado vazio quando o dia selecionado não tem
 /// nenhum evento — um convite ao descanso/reflexão, não um "vazio".
 ///
-/// Lista local em PT-BR, 100% offline, sem dependência de pacote
-/// externo. (O pacote daily_quotes ^0.0.1 do pub.dev tem a
-/// documentação quebrada — a função getRandomQuote() anunciada no
-/// README não é exportada de verdade pela lib. Fica pendente forkar
-/// e corrigir esse pacote depois, num repo próprio no GitHub.)
+/// Antes tínhamos uma lista local em PT-BR porque o pacote `daily_quotes`
+/// original do pub.dev tinha a `getRandomQuote()` anunciada no README mas
+/// não exportada de verdade. Isso foi corrigido no fork próprio
+/// (`package:daily_quotes` via git, ver pubspec.yaml), então agora usamos
+/// a função de lá.
 ///
-/// A frase é escolhida de forma determinística a partir do dia do ano,
-/// então ela não muda a cada rebuild, mas varia dia a dia.
-class DailyQuotes extends StatelessWidget {
+/// NOTA: `getRandomQuote()` é aleatória a cada chamada (não determinística
+/// por dia, diferente da lista antiga). Por isso a frase é sorteada uma
+/// vez em [initState] e guardada — assim ela não muda a cada rebuild do
+/// card (ex: ao trocar de aba e voltar sem recriar o widget), mas pode
+/// mudar se o widget for reconstruído do zero (trocar de dia selecionado,
+/// por exemplo). Se você quiser voltar a ter "uma frase fixa por dia",
+/// me avisa que eu adiciono uma seed determinística por cima da função.
+class DailyQuotes extends StatefulWidget {
   const DailyQuotes({super.key, this.data});
 
-  /// Data usada para escolher a frase. Se omitida, usa hoje.
+  /// Mantido por compatibilidade com quem já chama `DailyQuotes(data: ...)`
+  /// — não é mais usado para escolher a frase (a função do pacote não
+  /// aceita data), só existe pra não quebrar chamadas existentes.
   final DateTime? data;
 
-  static const List<String> _frases = [
-    'A simplicidade é o último grau de sofisticação.',
-    'Um dia livre também é produtivo.',
-    'Nada agendado. Só espaço pra respirar.',
-    'O silêncio na agenda também é um presente.',
-    'Menos compromissos, mais presença.',
-    'Hoje o tempo é todo seu.',
-    'Descansar também está na lista.',
-    'Um respiro no calendário.',
-  ];
+  @override
+  State<DailyQuotes> createState() => _DailyQuotesState();
+}
+
+class _DailyQuotesState extends State<DailyQuotes> {
+  late final String _frase;
+
+  @override
+  void initState() {
+    super.initState();
+    // .toString() é só uma salvaguarda: a assinatura confirmada no README
+    // do pacote é `getRandomQuote()` usada direto em `print()`, ou seja,
+    // já deve vir como String — mas isso garante que não quebra mesmo que
+    // o retorno mude para um tipo com toString() customizado.
+    _frase = pkg.getRandomQuote().toString();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final referencia = data ?? DateTime.now();
-    final indice = referencia.difference(DateTime(referencia.year)).inDays %
-        _frases.length;
-    final frase = _frases[indice];
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Text(
-        frase,
+        _frase,
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withOpacity(0.7),
