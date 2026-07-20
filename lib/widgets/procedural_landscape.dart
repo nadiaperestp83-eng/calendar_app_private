@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import '../shaders/landscape_params.dart';
 import '../shaders/landscape_shader_controller.dart';
 import 'procedural_landscape_painter.dart';
-import 'package:flutter/scheduler.dart';
-
 
 /// Widget "pronto para usar": carrega `landscape.frag`, mantém uma única
 /// instância de [ui.FragmentShader] viva (evita recompilar/realocar a cada
