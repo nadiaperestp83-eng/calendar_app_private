@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/evento.dart';
 import '../services/isar_service.dart';
 import '../theme/apple_calendar_colors.dart';
+import '../theme/app_design_tokens.dart';
 
 /// Tela cheia de criação de evento — "NovaConsultaScreen".
 ///
@@ -301,7 +302,7 @@ class _NovaConsultaScreenState extends State<NovaConsultaScreen> {
 
   Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 16, 4),
+      padding: const EdgeInsets.fromLTRB(8, 14, 20, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -343,18 +344,21 @@ class _NovaConsultaScreenState extends State<NovaConsultaScreen> {
   /// linguagem visual do GlassCard usado na listagem de eventos.
   Widget _glassCardWrapper({required Widget child, VoidCallback? onTap}) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(kBorderRadius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(
+          sigmaX: kFormGlassBlur,
+          sigmaY: kFormGlassBlur,
+        ),
         child: InkWell(
           onTap: onTap,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: Colors.white.withOpacity(0.12),
-              border: Border.all(color: Colors.white.withOpacity(0.22)),
+              borderRadius: BorderRadius.circular(kBorderRadius),
+              color: Colors.white.withOpacity(kFormGlassOpacity),
+              border: Border.all(color: Colors.white.withOpacity(0.14)),
             ),
             child: child,
           ),
