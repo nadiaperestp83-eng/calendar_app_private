@@ -5,6 +5,7 @@ import '../services/isar_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/calendar_sheet.dart';
 import '../widgets/hero_day_card.dart';
+import '../widgets/daily_quotes.dart';
 import '../theme/app_design_tokens.dart';
 import 'nova_consulta_screen.dart';
 
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _dataSelecionada = DateTime.now();
   List<Evento> _eventosDoDia = [];
   bool _carregando = true;
+  double _sheetExtent = kSheetMinExtent;
 
   static const _diasSemana = [
     'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
@@ -90,6 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   slivers: [
                     SliverToBoxAdapter(child: _buildHero()),
+                    // Respiro mínimo de 30px entre o Card "Hoje" e
+                    // qualquer outro elemento (Hero já tem 8px de
+                    // padding inferior, então completamos com 22px).
+                    const SliverToBoxAdapter(child: SizedBox(height: 22)),
                     if (_carregando)
                       const SliverToBoxAdapter(
                         child: Padding(
@@ -133,6 +139,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() => _dataSelecionada = novaData);
                 _carregarEventos();
               },
+              onExtentChanged: (extent) {
+                setState(() => _sheetExtent = extent);
+              },
             ),
           ],
         ),
@@ -162,21 +171,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEstadoVazio() {
-    // Sem números gigantes no fundo — só uma frase minimalista logo
-    // abaixo do Card "Hoje", em cinza quente pra harmonizar com o
-    // degradê Deep Twilight.
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(32, 28, 32, 20),
-      child: Text(
-        'Nada agendado. Um respiro no calendário.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: kCinzaQuente,
-          fontSize: 15,
-          fontWeight: FontWeight.w300,
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
+    // Só quando não há eventos: exibe a DailyQuotes, com fade
+    // controlado pela extensão do CalendarSheet — some suavemente
+    // quando o usuário expande o sheet, dando espaço total pro
+    // calendário (a frase ficaria coberta de qualquer forma).
+    final sheetExpandido = _sheetExtent >= kSheetMidExtent;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: sheetExpandido
+            ? const SizedBox(key: ValueKey('vazio_oculto'), height: 1)
+            : DailyQuotes(
+                key: const ValueKey('daily_quote'),
+                data: _dataSelecionada,
+              ),
       ),
     );
   }
