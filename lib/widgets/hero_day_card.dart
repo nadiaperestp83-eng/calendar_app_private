@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'landscape_painter.dart';
-import 'texture_painters.dart';
 import '../theme/app_design_tokens.dart';
 
 class HeroDayCard extends StatefulWidget {
