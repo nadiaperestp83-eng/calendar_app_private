@@ -188,26 +188,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEstadoVazio() {
+    // Composição tipográfica em vez de ícone genérico: o número do dia
+    // gigante e translúcido vira o elemento visual central, com uma
+    // frase curta e elegante por cima — o "vazio" passa a ser proposital.
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.spa_outlined,
-                color: Colors.white.withOpacity(0.6), size: 44),
-            const SizedBox(height: 16),
-            Text(
-              'Nenhum compromisso por aqui.\nAproveite o dia livre.',
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            '${_dataSelecionada.day}',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.06),
+              fontSize: 220,
+              fontWeight: FontWeight.w200,
+              height: 1,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Nada agendado.\nUm respiro no calendário.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 15,
-                height: 1.4,
+                color: Colors.white.withOpacity(0.65),
+                fontSize: 16,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 0.4,
+                height: 1.5,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
