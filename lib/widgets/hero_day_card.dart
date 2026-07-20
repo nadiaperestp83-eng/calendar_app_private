@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../shaders/landscape_params.dart';
-import 'procedural_landscape.dart';
+import 'hero_card_image_fallback.dart';
 import '../theme/app_design_tokens.dart';
 
 class HeroDayCard extends StatefulWidget {
@@ -76,9 +76,10 @@ class _HeroDayCardState extends State<HeroDayCard> with SingleTickerProviderStat
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    // 1. Base: paisagem 100% procedural via Fragment Shader
-                    //    (dart:ui.FragmentProgram — sem imagens/texturas)
-                    ProceduralLandscape(params: params),
+                    // 1. Base: paisagem via Fragment Shader, com fallback
+                    //    automático para uma imagem tratada do Pixabay caso
+                    //    o shader demore a compilar ou falhe.
+                    HeroCardImageFallback(params: params),
 
                     // 2. O Efeito de Vidro (Glassmorphism) ajustado para sigma 5
                     // Agora o desfoque é leve, preservando o sol e montanhas
