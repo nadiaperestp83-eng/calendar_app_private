@@ -51,6 +51,14 @@ dependencies:
   # do servidor (calendar_app_server), essa tela precisa ser
   # reescrita para ler do IsarService local em vez da API.
 
+  # --- Reintroduzido a pedido explícito: http (^1.2.2) ---
+  # Usado SOMENTE pelo PixabayService (fallback de imagem do Hero Card).
+  # Isso reintroduz rede no app — está em conflito direto com a regra
+  # "zero rede" documentada acima. Mantenha isolado no PixabayService
+  # e trate falha de rede/DNS/timeout como um caso normal (o fallback
+  # já assume que pode não haver internet).
+  http: ^1.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
