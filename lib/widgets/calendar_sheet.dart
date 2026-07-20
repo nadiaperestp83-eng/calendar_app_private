@@ -445,14 +445,16 @@ class _CalendarSheetState extends State<CalendarSheet> {
               ),
             ),
             if (temEvento && !ehHoje)
-              Positioned(
+              const Positioned(
                 bottom: 6,
-                child: Container(
+                child: SizedBox(
                   width: 4,
                   height: 4,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: kCorAcento,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kCorAcento,
+                    ),
                   ),
                 ),
               ),
