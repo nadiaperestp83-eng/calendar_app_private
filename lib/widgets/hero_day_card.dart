@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-import 'landscape_painter.dart';
+import '../shaders/landscape_params.dart';
+import 'procedural_landscape.dart';
 import '../theme/app_design_tokens.dart';
 
 class HeroDayCard extends StatefulWidget {
@@ -45,7 +46,11 @@ class _HeroDayCardState extends State<HeroDayCard> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final periodo = periodoAtual(DateTime.now());
+    // A seed muda uma vez por dia (fica estável entre rebuilds do mesmo
+    // dia) e já decide, de forma determinística, tanto o tipo de cenário
+    // (montanhas / colinas com vegetação / formas orgânicas) quanto os
+    // detalhes finos do terreno. A paleta muda com o período do dia.
+    final params = LandscapeParams.fromDate(DateTime.now());
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -71,8 +76,9 @@ class _HeroDayCardState extends State<HeroDayCard> with SingleTickerProviderStat
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    // 1. Base: A paisagem pintada por código
-                    CustomPaint(painter: LandscapePainter(periodo: periodo)),
+                    // 1. Base: paisagem 100% procedural via Fragment Shader
+                    //    (dart:ui.FragmentProgram — sem imagens/texturas)
+                    ProceduralLandscape(params: params),
 
                     // 2. O Efeito de Vidro (Glassmorphism) ajustado para sigma 5
                     // Agora o desfoque é leve, preservando o sol e montanhas
