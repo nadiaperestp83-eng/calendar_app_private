@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../models/evento.dart';
+import '../theme/app_design_tokens.dart';
 
 /// Cartão de vidro fosco (glassmorphism) usado para exibir um [Evento].
 ///
@@ -35,7 +36,7 @@ class GlassCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(kBorderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: InkWell(
@@ -44,7 +45,7 @@ class GlassCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(kBorderRadius),
                 color: Colors.white.withOpacity(0.14),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.28),
