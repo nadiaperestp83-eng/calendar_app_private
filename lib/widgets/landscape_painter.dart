@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// PerÃ­odos do dia usados para escolher a paleta da paisagem.
+/// Períodos do dia usados para escolher a paleta da paisagem.
 enum PeriodoDoDia { madrugada, manha, tarde, entardecer, noite }
 
 PeriodoDoDia periodoAtual(DateTime agora) {
@@ -13,8 +13,7 @@ PeriodoDoDia periodoAtual(DateTime agora) {
   return PeriodoDoDia.noite;
 }
 
-/// Desenha uma paisagem estilizada (cÃ©u + sol/lua + montanhas em camadas)
-/// inteiramente via cÃ³digo â€” sem nenhuma imagem/asset externo.
+/// Desenha uma paisagem estilizada (céu + sol/lua + montanhas em camadas)
 class LandscapePainter extends CustomPainter {
   LandscapePainter({required this.periodo});
 
@@ -23,15 +22,15 @@ class LandscapePainter extends CustomPainter {
   List<Color> get _corCeu {
     switch (periodo) {
       case PeriodoDoDia.madrugada:
-        return const [Color(0xFF2B2E4A), Color(0xFFE8A87C)];
+        return const [Color(0xFF1E2140), Color(0xFFD67A4D)];
       case PeriodoDoDia.manha:
-        return const [Color(0xFF6DA9E4), Color(0xFFBFE3F0)];
+        return const [Color(0xFF3B82F6), Color(0xFF7DD3FC)];
       case PeriodoDoDia.tarde:
-        return const [Color(0xFF3E8FDE), Color(0xFF8FCBEA)];
+        return const [Color(0xFF0284C7), Color(0xFF38BDF8)];
       case PeriodoDoDia.entardecer:
-        return const [Color(0xFFFF7E5F), Color(0xFFFEB47B)];
+        return const [Color(0xFFF97316), Color(0xFFFDBA74)];
       case PeriodoDoDia.noite:
-        return const [Color(0xFF0F1030), Color(0xFF2B2E5C)];
+        return const [Color(0xFF0F172A), Color(0xFF1E293B)];
     }
   }
 
@@ -42,11 +41,11 @@ class LandscapePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
 
-    // 1) CÃ©u em gradiente
+    // 1) Céu com gradiente diagonal para dar profundidade
     final ceuPaint = Paint()
       ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
         colors: _corCeu,
       ).createShader(rect);
     canvas.drawRect(rect, ceuPaint);
@@ -54,79 +53,46 @@ class LandscapePainter extends CustomPainter {
     // 2) Sol ou lua
     final astroCentro = Offset(size.width * 0.78, size.height * 0.28);
     final astroRaio = size.height * 0.16;
+    
     if (_ehNoite) {
-      canvas.drawCircle(
-        astroCentro,
-        astroRaio,
-        Paint()..color = Colors.white.withOpacity(0.9),
-      );
-      // pequenas estrelas
+      // Lua
+      canvas.drawCircle(astroCentro, astroRaio, Paint()..color = Colors.white.withOpacity(0.95));
+      // Estrelas
       final rnd = math.Random(periodo.index);
-      for (var i = 0; i < 18; i++) {
-        final p = Offset(
-          rnd.nextDouble() * size.width,
-          rnd.nextDouble() * size.height * 0.6,
-        );
+      for (var i = 0; i < 15; i++) {
         canvas.drawCircle(
-          p,
-          rnd.nextDouble() * 1.2 + 0.3,
-          Paint()..color = Colors.white.withOpacity(0.6),
+          Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * size.height * 0.5),
+          rnd.nextDouble() * 1.5,
+          Paint()..color = Colors.white.withOpacity(0.7),
         );
       }
     } else {
+      // Sol com brilho mais intenso
       canvas.drawCircle(
         astroCentro,
         astroRaio,
         Paint()
-          ..color = Colors.white.withOpacity(0.85)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+          ..color = Colors.white.withOpacity(0.4)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 25),
       );
-      canvas.drawCircle(
-        astroCentro,
-        astroRaio * 0.7,
-        Paint()..color = Colors.white,
-      );
+      canvas.drawCircle(astroCentro, astroRaio * 0.65, Paint()..color = Colors.white.withOpacity(0.95));
     }
 
-    // 3) Montanhas em 3 camadas (paralaxe visual simples)
-    _desenharCamadaMontanha(
-      canvas, size,
-      alturaBase: 0.62, variacao: 0.10,
-      cor: _corCeu.last.withOpacity(0.55),
-      seed: 1,
-    );
-    _desenharCamadaMontanha(
-      canvas, size,
-      alturaBase: 0.74, variacao: 0.12,
-      cor: _corCeu.last.withOpacity(0.8),
-      seed: 2,
-    );
-    _desenharCamadaMontanha(
-      canvas, size,
-      alturaBase: 0.86, variacao: 0.09,
-      cor: (_ehNoite ? const Color(0xFF15162E) : const Color(0xFF1B2A38)),
-      seed: 3,
-    );
+    // 3) Montanhas com opacidade crescente (camada da frente mais escura)
+    _desenharCamadaMontanha(canvas, size, alturaBase: 0.65, variacao: 0.08, cor: _corCeu.last.withOpacity(0.4), seed: 1);
+    _desenharCamadaMontanha(canvas, size, alturaBase: 0.78, variacao: 0.10, cor: _corCeu.last.withOpacity(0.7), seed: 2);
+    _desenharCamadaMontanha(canvas, size, alturaBase: 0.90, variacao: 0.07, cor: _corCeu.last.withOpacity(1.0), seed: 3);
   }
 
-  void _desenharCamadaMontanha(
-    Canvas canvas,
-    Size size, {
-    required double alturaBase,
-    required double variacao,
-    required Color cor,
-    required int seed,
-  }) {
+  void _desenharCamadaMontanha(Canvas canvas, Size size, {required double alturaBase, required double variacao, required Color cor, required int seed}) {
     final rnd = math.Random(seed * 17 + periodo.index);
     final path = Path()..moveTo(0, size.height);
     double x = 0;
-    final passo = size.width / 6;
+    final passo = size.width / 5;
     path.lineTo(0, size.height * alturaBase);
     while (x < size.width) {
       final y = size.height * (alturaBase - rnd.nextDouble() * variacao);
-      final xCtrl = x + passo / 2;
-      final xFim = math.min(x + passo, size.width);
-      path.quadraticBezierTo(xCtrl, y, xFim, size.height * alturaBase);
+      path.quadraticBezierTo(x + passo / 2, y, math.min(x + passo, size.width), size.height * alturaBase);
       x += passo;
     }
     path.lineTo(size.width, size.height);
@@ -135,6 +101,5 @@ class LandscapePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant LandscapePainter oldDelegate) =>
-      oldDelegate.periodo != periodo;
+  bool shouldRepaint(covariant LandscapePainter oldDelegate) => oldDelegate.periodo != periodo;
 }
