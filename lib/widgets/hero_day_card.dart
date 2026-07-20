@@ -74,26 +74,26 @@ class _HeroDayCardState extends State<HeroDayCard> with SingleTickerProviderStat
                     // 1. Base: A paisagem pintada por código
                     CustomPaint(painter: LandscapePainter(periodo: periodo)),
 
-                    // 2. O Efeito de Vidro (Glassmorphism)
-                    // Blur forte (15) cria a sensação real de profundidade
+                    // 2. O Efeito de Vidro (Glassmorphism) ajustado para sigma 5
+                    // Agora o desfoque é leve, preservando o sol e montanhas
                     BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                       child: Container(
                         decoration: BoxDecoration(
-                          // Reflexo sutil de luz estilo premium
+                          // Reflexo de luz suave
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.white.withOpacity(0.3),
-                              Colors.white.withOpacity(0.1),
+                              Colors.white.withOpacity(0.25),
+                              Colors.white.withOpacity(0.05),
                             ],
                           ),
                         ),
                       ),
                     ),
 
-                    // 3. Gradiente para garantir legibilidade do texto na base
+                    // 3. Gradiente para garantir legibilidade do texto
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -101,7 +101,7 @@ class _HeroDayCardState extends State<HeroDayCard> with SingleTickerProviderStat
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.4),
+                            Colors.black.withOpacity(0.5),
                           ],
                           stops: const [0.5, 1.0],
                         ),
@@ -130,7 +130,7 @@ class _HeroDayCardState extends State<HeroDayCard> with SingleTickerProviderStat
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: kCorAcento.withOpacity(0.3),
+                                color: kCorAcento.withOpacity(0.35),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: kCorAcento.withOpacity(0.5)),
                               ),
