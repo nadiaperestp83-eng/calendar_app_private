@@ -165,8 +165,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // Sem números gigantes no fundo — só uma frase minimalista logo
     // abaixo do Card "Hoje", em cinza quente pra harmonizar com o
     // degradê Deep Twilight.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 28, 32, 20),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(32, 28, 32, 20),
       child: Text(
         'Nada agendado. Um respiro no calendário.',
         textAlign: TextAlign.center,
