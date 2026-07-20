@@ -51,13 +51,32 @@ dependencies:
   # do servidor (calendar_app_server), essa tela precisa ser
   # reescrita para ler do IsarService local em vez da API.
 
-  # --- Reintroduzido a pedido explícito: http (^1.2.2) ---
-  # Usado SOMENTE pelo PixabayService (fallback de imagem do Hero Card).
-  # Isso reintroduz rede no app — está em conflito direto com a regra
-  # "zero rede" documentada acima. Mantenha isolado no PixabayService
-  # e trate falha de rede/DNS/timeout como um caso normal (o fallback
-  # já assume que pode não haver internet).
-  http: ^1.2.2
+  # --- Removido: http (^1.2.2) / PixabayService ---
+  # Substituído pelo pacote próprio `nature_daily`, que gera as
+  # imagens do Hero Card a partir de assets locais embutidos no
+  # pacote (sem chamada de rede). Isso RESTAURA a regra de "zero
+  # rede" do projeto — ver nature_daily abaixo.
+
+  # --- nature_daily (próprio, ainda não publicado no pub.dev) ---
+  # Gera/retorna as imagens de fallback do Hero Card a partir de
+  # assets locais (substitui o antigo PixabayService).
+  nature_daily:
+    git:
+      url: https://github.com/nadiaperestp83-eng/nature_daily.git
+      ref: main
+
+  # --- daily_quotes (próprio, ainda não publicado no pub.dev) ---
+  # Repo se chama "Daily_Quotes_update" no GitHub, mas o pubspec.yaml
+  # do pacote declara `name: daily_quotes` — é esse o nome usado nos
+  # imports (`package:daily_quotes/...`), não "daily_quotes_update".
+  # Substitui o widget local `DailyQuotes`
+  # (lib/widgets/daily_quotes.dart), que existia justamente porque o
+  # pacote `daily_quotes` original do pub.dev (versão de terceiros)
+  # tinha a getRandomQuote() quebrada (não exportada de verdade).
+  daily_quotes:
+    git:
+      url: https://github.com/nadiaperestp83-eng/Daily_Quotes_update.git
+      ref: main
 
 dev_dependencies:
   flutter_test:
