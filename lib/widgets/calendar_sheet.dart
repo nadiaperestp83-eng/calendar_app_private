@@ -266,14 +266,12 @@ class _CalendarSheetState extends State<CalendarSheet> {
   }
 
   // ---------------------------------------------------------------------
-  // Estado expandido: VisaoMesLista — lista vertical, sem grade
+  // Estado expandido: VisaoMesGrade — grade de cápsulas flutuantes,
+  // 7 colunas, zero linha/borda de tabela.
   // ---------------------------------------------------------------------
   Widget _buildVisaoMesLista(ScrollController scrollController) {
-    final diasNoMes =
-        DateTime(_mesVisivel.year, _mesVisivel.month + 1, 0).day;
-
     return Column(
-      key: const ValueKey('visao_mes_lista'),
+      key: const ValueKey('visao_mes_grade'),
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -300,24 +298,93 @@ class _CalendarSheetState extends State<CalendarSheet> {
             ],
           ),
         ),
+        // Cabeçalho fixo dos dias da semana — dá o alinhamento das
+        // 7 colunas sem virar linha de tabela (sem borda/fundo).
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+          child: Row(
+            children: _diasSemanaAbrev
+                .map(
+                  (d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white.withOpacity(0.4),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
         Expanded(
-          child: ListView.builder(
-            controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            itemCount: diasNoMes,
-            itemBuilder: (context, index) {
-              final dia = DateTime(
-                _mesVisivel.year, _mesVisivel.month, index + 1,
-              );
-              return _linhaDoMes(dia);
+          // Gesto de swipe lateral pra trocar de mês, além dos chevrons.
+          child: GestureDetector(
+            onHorizontalDragEnd: (details) {
+              final velocidade = details.primaryVelocity ?? 0;
+              if (velocidade < -250) {
+                _mudarMes(1);
+              } else if (velocidade > 250) {
+                _mudarMes(-1);
+              }
             },
+            behavior: HitTestBehavior.translucent,
+            // AnimatedSwitcher com crossfade: ao trocar de mês, o que
+            // muda é o conteúdo (números), não a estrutura da grade —
+            // a moldura de 7 colunas permanece visualmente estável.
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: _buildGradeDoMes(scrollController),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _linhaDoMes(DateTime dia) {
+  Widget _buildGradeDoMes(ScrollController scrollController) {
+    final diasNoMes =
+        DateTime(_mesVisivel.year, _mesVisivel.month + 1, 0).day;
+    final primeiroDia = DateTime(_mesVisivel.year, _mesVisivel.month, 1);
+    // weekday: segunda=1 ... domingo=7. Nossa semana começa na segunda,
+    // então o offset de células vazias antes do dia 1 é (weekday - 1).
+    final offset = primeiroDia.weekday - 1;
+
+    return GridView.builder(
+      key: ValueKey('grade_${_mesVisivel.year}_${_mesVisivel.month}'),
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        // Espaçamento ENTRE cápsulas maior que o respiro interno de
+        // cada uma — é isso que evita a leitura de "grade/tabela".
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.82,
+      ),
+      itemCount: offset + diasNoMes,
+      itemBuilder: (context, index) {
+        if (index < offset) {
+          // Célula vazia antes do dia 1 — sem cápsula, sem número.
+          return const SizedBox.shrink();
+        }
+        final dia = DateTime(
+          _mesVisivel.year, _mesVisivel.month, index - offset + 1,
+        );
+        return _capsulaDoDia(dia);
+      },
+    );
+  }
+
+  Widget _capsulaDoDia(DateTime dia) {
     final selecionado = dia.year == widget.dataSelecionada.year &&
         dia.month == widget.dataSelecionada.month &&
         dia.day == widget.dataSelecionada.day;
@@ -326,75 +393,64 @@ class _CalendarSheetState extends State<CalendarSheet> {
     );
     final ehHoje = _ehMesmoDia(dia, DateTime.now());
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: () => _selecionarData(dia),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            // Cartão individual flutuando — zero linha divisória rígida.
-            borderRadius: BorderRadius.circular(16),
-            color: selecionado
-                ? kCorAcento.withOpacity(0.18)
-                : Colors.white.withOpacity(0.05),
-            border: selecionado
-                ? Border.all(color: kCorAcento.withOpacity(0.5))
-                : null,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 44,
-                child: Text(
-                  _diaSemanaAbrev(dia.weekday),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w300,
-                    color: Colors.white.withOpacity(0.55),
-                  ),
-                ),
+    // Hierarquia de cor:
+    // 1) Hoje → preenchimento sólido no acento índigo.
+    // 2) Tem evento → preenchimento suave (0.15) + pontinho embaixo.
+    // 3) Vazio → sem fundo, só o número com opacidade baixa (0.3).
+    Color corFundo;
+    Color corTexto;
+    FontWeight peso;
+    if (ehHoje) {
+      corFundo = kCorAcento;
+      corTexto = Colors.white;
+      peso = FontWeight.bold;
+    } else if (temEvento) {
+      corFundo = kCorAcento.withOpacity(0.15);
+      corTexto = Colors.white;
+      peso = FontWeight.w400;
+    } else {
+      corFundo = Colors.transparent;
+      corTexto = Colors.white.withOpacity(0.3);
+      peso = FontWeight.w300;
+    }
+
+    return GestureDetector(
+      onTap: () => _selecionarData(dia),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: corFundo,
+          // Anel de seleção sutil, independente da categoria — indica
+          // qual dia está ativo sem quebrar a hierarquia de cor acima.
+          border: selecionado && !ehHoje
+              ? Border.all(color: Colors.white.withOpacity(0.6), width: 1.4)
+              : null,
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Text(
+              '${dia.day}',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: peso,
+                color: corTexto,
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${dia.day}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: ehHoje ? FontWeight.bold : FontWeight.w300,
-                  color: ehHoje ? kCorAcento : Colors.white,
-                ),
-              ),
-              if (ehHoje) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: kCorAcento.withOpacity(0.22),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'hoje',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                ),
-              ],
-              const Spacer(),
-              // Indicação sutil de dias com eventos — um pontinho, nada
-              // de números ou badges pesados.
-              if (temEvento)
-                Container(
-                  width: 7,
-                  height: 7,
+            ),
+            if (temEvento && !ehHoje)
+              Positioned(
+                bottom: 6,
+                child: Container(
+                  width: 4,
+                  height: 4,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: kCorAcento.withOpacity(0.85),
+                    color: kCorAcento,
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
