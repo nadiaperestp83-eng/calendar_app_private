@@ -1,10 +1,16 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Pinta um LinearGradient manualmente via [Paint], com `dither: true`
-/// explicitamente ativado — reduz o "banding" (faixas de cor visíveis)
-/// que o BoxDecoration/DecoratedBox padrão pode deixar passar em telas
-/// de alta densidade com gradientes suaves como o do Card "Hoje".
+/// Pinta um LinearGradient manualmente via [Paint].
+///
+/// Nota técnica: `Paint` não tem uma propriedade de instância `dither`
+/// na API pública do Flutter (isso nunca saiu de uma PR experimental
+/// de 2019). O dithering de gradientes hoje é controlado pela flag
+/// estática `Paint.enableDithering`, que desde as versões recentes do
+/// engine (Impeller) já vem `true` por padrão — ou seja, o gradiente
+/// abaixo já é renderizado sem banding, sem precisar configurar nada
+/// manualmente. Mantemos o CustomPainter mesmo assim, só pra ter
+/// controle total do desenho (paisagem + camadas por cima).
 class DitheredGradientPainter extends CustomPainter {
   DitheredGradientPainter({required this.gradient});
 
@@ -15,10 +21,7 @@ class DitheredGradientPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final paint = Paint()
       ..shader = gradient.createShader(rect)
-      ..isAntiAlias = true
-      // Ativa dithering explicitamente no Skia/Impeller — é isso que
-      // elimina o banding em degradês suaves.
-      ..dither = true;
+      ..isAntiAlias = true;
     canvas.drawRect(rect, paint);
   }
 
