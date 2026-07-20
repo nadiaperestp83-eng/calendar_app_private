@@ -185,10 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
             FadeTransition(opacity: animation, child: child),
         child: sheetExpandido
             ? const SizedBox(key: ValueKey('vazio_oculto'), height: 1)
-            : DailyQuotes(
-                key: const ValueKey('daily_quote'),
-                data: _dataSelecionada,
-              ),
+            : const DailyQuotes(key: ValueKey('daily_quote')),
       ),
     );
   }
