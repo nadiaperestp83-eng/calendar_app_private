@@ -1,30 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:daily_quotes/daily_quotes.dart';
 
 /// Exibida no lugar do estado vazio quando o dia selecionado não tem
 /// nenhum evento — um convite ao descanso/reflexão, não um "vazio".
 ///
-/// Usa o pacote `daily_quotes` (pub.dev, ^0.0.1) — 100% local/offline,
-/// sem chamada de rede. A frase é sorteada uma única vez na criação do
-/// widget (initState/late final) e fica fixa enquanto ele existir na
-/// árvore, evitando que ela mude a cada rebuild/AnimatedSwitcher.
-class DailyQuotes extends StatefulWidget {
-  const DailyQuotes({super.key});
+/// Lista local em PT-BR, 100% offline, sem dependência de pacote
+/// externo. (O pacote daily_quotes ^0.0.1 do pub.dev tem a
+/// documentação quebrada — a função getRandomQuote() anunciada no
+/// README não é exportada de verdade pela lib. Fica pendente forkar
+/// e corrigir esse pacote depois, num repo próprio no GitHub.)
+///
+/// A frase é escolhida de forma determinística a partir do dia do ano,
+/// então ela não muda a cada rebuild, mas varia dia a dia.
+class DailyQuotes extends StatelessWidget {
+  const DailyQuotes({super.key, this.data});
 
-  @override
-  State<DailyQuotes> createState() => _DailyQuotesState();
-}
+  /// Data usada para escolher a frase. Se omitida, usa hoje.
+  final DateTime? data;
 
-class _DailyQuotesState extends State<DailyQuotes> {
-  // getRandomQuote() do pacote daily_quotes — sorteada uma vez só.
-  late final String _frase = getRandomQuote().toString();
+  static const List<String> _frases = [
+    'A simplicidade é o último grau de sofisticação.',
+    'Um dia livre também é produtivo.',
+    'Nada agendado. Só espaço pra respirar.',
+    'O silêncio na agenda também é um presente.',
+    'Menos compromissos, mais presença.',
+    'Hoje o tempo é todo seu.',
+    'Descansar também está na lista.',
+    'Um respiro no calendário.',
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final referencia = data ?? DateTime.now();
+    final indice = referencia.difference(DateTime(referencia.year)).inDays %
+        _frases.length;
+    final frase = _frases[indice];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Text(
-        _frase,
+        frase,
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withOpacity(0.7),
