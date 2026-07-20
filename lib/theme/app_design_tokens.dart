@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-
 /// Constantes de design compartilhadas — paleta "Deep Twilight" e
 /// parâmetros do glassmorphism, usados em toda a HomeScreen, no
 /// HeroDayCard, no CalendarSheet e no formulário de novo evento.
 library app_design_tokens;
+
+import 'package:flutter/material.dart';
 
 // --- Raio de borda padrão (Card Hoje, Sheet, formulário) ---
 const double kBorderRadius = 24.0;
