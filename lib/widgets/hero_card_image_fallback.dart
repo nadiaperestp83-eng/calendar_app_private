@@ -2,32 +2,17 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:nature_daily/nature_daily.dart';
 
-import '../services/pixabay_service.dart';
 import '../shaders/landscape_params.dart';
 import '../shaders/landscape_shader_controller.dart';
 import 'procedural_landscape.dart';
 
-/// Decide, para cada [LandscapeScenario] + período (dia/noite), qual
-/// termo de busca no Pixabay melhor combina com o que o shader
-/// desenharia — mantendo o clima minimalista/abstrato do app (nada de
-/// fotos de pessoas, texto, logos etc, por isso o "minimalist"/
-/// "abstract" em quase todas as queries).
-String queryParaCenario(LandscapeParams params) {
-  String base;
-  switch (params.scenario) {
-    case LandscapeScenario.montanhas:
-      base = 'mountain landscape minimalist';
-      break;
-    case LandscapeScenario.colinasComVegetacao:
-      base = 'green hills landscape minimalist';
-      break;
-    case LandscapeScenario.formasOrganicas:
-      base = 'abstract hills landscape';
-      break;
-  }
-  return params.isNight ? '$base night' : '$base sunlight';
-}
+/// Motor do `nature_daily` compartilhado por todos os `HeroCardImageFallback`
+/// da árvore de widgets — evita recriar a lista de ecossistemas (mesma
+/// instância imutável, `List.unmodifiable` já dentro do próprio pacote) a
+/// cada rebuild do Hero Card.
+final NatureDailyEngine _engine = NatureDailyEngine(ecossistemasData);
 
 /// Matriz de saturação para [ColorFilter.matrix].
 ///
@@ -54,19 +39,25 @@ ColorFilter matrizDeSaturacao(double saturation) {
 ///
 /// 1. Começa a compilar o shader normalmente (via
 ///    `LandscapeShaderController`).
-/// 2. Se o shader não estiver pronto depois de [shaderTimeout], inicia
-///    em paralelo a busca/download de uma imagem no Pixabay coerente
-///    com [params] e a exibe já tratada (blur + saturação reduzida +
-///    gradiente com as cores `skyTop`/`skyBottom` do shader).
-/// 3. Se/quando o shader terminar de compilar (mesmo que a imagem já
-///    esteja na tela), faz um crossfade suave de volta para o shader,
-///    que é sempre a experiência "premium" pretendida.
-/// 4. Se o shader falhar (asset ausente, erro de compilação GLSL
-///    etc), fica definitivamente na imagem tratada.
+/// 2. Se o shader não estiver pronto depois de [shaderTimeout], troca para
+///    o conteúdo do dia do `nature_daily` (imagem local `.webp` já tratada
+///    com blur + saturação reduzida + gradiente `skyTop`/`skyBottom`). Como
+///    é um asset embutido no pacote — sem rede — isso é praticamente
+///    instantâneo; o timeout aqui serve só pra não trocar de visual antes
+///    da hora em devices onde o shader compila rápido.
+/// 3. Se/quando o shader terminar de compilar, faz um crossfade suave de
+///    volta pra ele, que é sempre a experiência "premium" pretendida.
+/// 4. Se o shader falhar (asset ausente, erro de compilação GLSL etc),
+///    fica definitivamente no conteúdo do `nature_daily`.
 ///
-/// Uso: troque, em `hero_day_card.dart`,
-/// `ProceduralLandscape(params: params)` por
-/// `HeroCardImageFallback(params: params)`.
+/// NOTA DE DESIGN: o `nature_daily` é um pacote de conteúdo educativo
+/// "cíclico e determinístico por dia" (`getConteudoDeHoje()`), não uma
+/// busca por cenário como era o Pixabay. Por isso este widget NÃO tenta
+/// casar `params.scenario` com a `categoria` do ecossistema — todo mundo
+/// vê a mesma "surpresa educativa do dia", independente da paisagem do
+/// shader. Se você quiser filtrar por categoria (ex: `scenario ==
+/// montanhas` → só itens de categoria 'Tundra'), me diga o mapeamento que
+/// eu ajusto o `_escolherItem()` abaixo.
 class HeroCardImageFallback extends StatefulWidget {
   const HeroCardImageFallback({
     super.key,
@@ -74,7 +65,6 @@ class HeroCardImageFallback extends StatefulWidget {
     this.shaderTimeout = const Duration(milliseconds: 600),
     this.blurSigma = 18.0,
     this.saturation = 0.35,
-    this.query,
   });
 
   final LandscapeParams params;
@@ -93,10 +83,6 @@ class HeroCardImageFallback extends StatefulWidget {
   /// visualmente com o resto do app.
   final double saturation;
 
-  /// Override manual da busca — se `null`, é derivada automaticamente
-  /// de `params.scenario` + `params.isNight` via [queryParaCenario].
-  final String? query;
-
   @override
   State<HeroCardImageFallback> createState() => _HeroCardImageFallbackState();
 }
@@ -105,14 +91,12 @@ enum _EstadoVisual { aguardandoShader, mostrandoFallback, mostrandoShader }
 
 class _HeroCardImageFallbackState extends State<HeroCardImageFallback> {
   ui.FragmentShader? _shader;
-  PixabayImage? _imagemFallback;
   bool _shaderFalhou = false;
-  bool _fallbackDisparado = false;
   Timer? _timeoutTimer;
 
   _EstadoVisual get _estado {
     if (_shader != null) return _EstadoVisual.mostrandoShader;
-    if (_imagemFallback != null || _shaderFalhou) {
+    if (_shaderFalhou || (_timeoutTimer != null && !_timeoutTimer!.isActive)) {
       return _EstadoVisual.mostrandoFallback;
     }
     return _EstadoVisual.aguardandoShader;
@@ -122,7 +106,9 @@ class _HeroCardImageFallbackState extends State<HeroCardImageFallback> {
   void initState() {
     super.initState();
     _carregarShader();
-    _timeoutTimer = Timer(widget.shaderTimeout, _dispararFallbackSeNecessario);
+    _timeoutTimer = Timer(widget.shaderTimeout, () {
+      if (mounted && _shader == null) setState(() {});
+    });
   }
 
   Future<void> _carregarShader() async {
@@ -136,25 +122,6 @@ class _HeroCardImageFallbackState extends State<HeroCardImageFallback> {
       // esperar o timeout.
       if (!mounted) return;
       setState(() => _shaderFalhou = true);
-      _dispararFallbackSeNecessario();
-    }
-  }
-
-  Future<void> _dispararFallbackSeNecessario() async {
-    if (_fallbackDisparado || _shader != null || !mounted) return;
-    _fallbackDisparado = true;
-
-    final query = widget.query ?? queryParaCenario(widget.params);
-    try {
-      final imagem = await PixabayService.searchFirst(query);
-      if (!mounted || _shader != null) return; // shader chegou primeiro
-      setState(() => _imagemFallback = imagem);
-    } on PixabayException {
-      // Sem chave configurada, sem internet, sem resultados etc — não
-      // há o que fazer além de deixar o placeholder simples do
-      // `ProceduralLandscape` (gradiente `skyTop`/`skyBottom`) até o
-      // shader compilar. Não propaga a exceção pra não derrubar o
-      // Hero Card por causa de uma imagem decorativa.
     }
   }
 
@@ -163,6 +130,8 @@ class _HeroCardImageFallbackState extends State<HeroCardImageFallback> {
     _timeoutTimer?.cancel();
     super.dispose();
   }
+
+  Ecossistema _escolherItem() => _engine.getConteudoDeHoje();
 
   @override
   Widget build(BuildContext context) {
@@ -186,17 +155,9 @@ class _HeroCardImageFallbackState extends State<HeroCardImageFallback> {
           params: widget.params,
         );
       case _EstadoVisual.mostrandoFallback:
-        if (_imagemFallback == null) {
-          // Shader falhou mas a imagem ainda não chegou: gradiente
-          // simples enquanto isso, igual ao placeholder original.
-          return _GradientePlaceholder(
-            key: const ValueKey('placeholder'),
-            params: widget.params,
-          );
-        }
         return _ImagemTratada(
           key: const ValueKey('fallback-image'),
-          imagem: _imagemFallback!,
+          ecossistema: _escolherItem(),
           params: widget.params,
           blurSigma: widget.blurSigma,
           saturation: widget.saturation,
@@ -228,20 +189,20 @@ class _GradientePlaceholder extends StatelessWidget {
   }
 }
 
-/// Aplica o tratamento visual pedido sobre a imagem do Pixabay:
+/// Aplica o tratamento visual pedido sobre a imagem do `nature_daily`:
 /// blur -> dessaturação -> gradiente com as cores do shader por cima,
 /// pra ela se misturar com o resto do app em vez de parecer uma foto
 /// realista solta no meio da UI.
 class _ImagemTratada extends StatelessWidget {
   const _ImagemTratada({
     super.key,
-    required this.imagem,
+    required this.ecossistema,
     required this.params,
     required this.blurSigma,
     required this.saturation,
   });
 
-  final PixabayImage imagem;
+  final Ecossistema ecossistema;
   final LandscapeParams params;
   final double blurSigma;
   final double saturation;
@@ -251,7 +212,8 @@ class _ImagemTratada extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1) Imagem base, desfocada e dessaturada.
+        // 1) Imagem base (asset local .webp do pacote), desfocada e
+        // dessaturada.
         ColorFiltered(
           colorFilter: matrizDeSaturacao(saturation),
           child: ImageFiltered(
@@ -260,27 +222,12 @@ class _ImagemTratada extends StatelessWidget {
               sigmaY: blurSigma,
               tileMode: TileMode.decal,
             ),
-            child: Image.network(
-              imagem.webformatUrl,
+            child: Image.asset(
+              ecossistema.assetPath,
               fit: BoxFit.cover,
-              // Evita "pop-in" abrupto: a imagem some suavemente do
-              // cinza pro conteúdo carregado.
-              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                if (wasSynchronouslyLoaded) return child;
-                return AnimatedOpacity(
-                  opacity: frame == null ? 0 : 1,
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOut,
-                  child: child,
-                );
-              },
               errorBuilder: (context, error, stackTrace) {
-                // Download falhou depois de já termos passado pela
-                // busca (ex: CDN fora do ar) — cai pro placeholder.
-                return _GradientePlaceholder(params: params);
-              },
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
+                // Asset ausente/corrompido no pacote — cai pro
+                // placeholder de gradiente puro.
                 return _GradientePlaceholder(params: params);
               },
             ),
