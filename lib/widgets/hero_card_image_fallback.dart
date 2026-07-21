@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:nature_daily/nature_daily.dart';
 
@@ -66,6 +68,61 @@ class _HeroCardImageFallbackState extends State<HeroCardImageFallback> {
           return _GradientePlaceholder(params: widget.params);
         }
         return _ImagemDoDia(item: engine.getConteudoDeHoje(), params: widget.params, overlayOpacityTop: widget.overlayOpacityTop, overlayOpacityBottom: widget.overlayOpacityBottom);
+      },
+    );
+  }
+}
+
+/// Brilho ambiente: a MESMA imagem do dia (via engine em cache — garantido
+/// ser idêntica à do `HeroCardImageFallback` nítido), só que borrada e
+/// ampliada, pensada para ficar ATRÁS e SEM clipe, vazando pelas bordas do
+/// card — efeito "auréola" comum em capas de álbum (Spotify/Apple Music),
+/// em vez de borrar a própria foto nítida.
+class HeroCardAmbientGlow extends StatefulWidget {
+  const HeroCardAmbientGlow({
+    super.key,
+    required this.params,
+    this.blurSigma = 40.0,
+    this.scale = 1.25,
+  });
+
+  final LandscapeParams params;
+  final double blurSigma;
+  final double scale;
+
+  @override
+  State<HeroCardAmbientGlow> createState() => _HeroCardAmbientGlowState();
+}
+
+class _HeroCardAmbientGlowState extends State<HeroCardAmbientGlow> {
+  late final Future<NatureDailyEngine> _future = _obterEngine();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<NatureDailyEngine>(
+      future: _future,
+      builder: (context, snapshot) {
+        final engine = snapshot.data;
+        if (engine == null || snapshot.hasError || engine.totalItens == 0) {
+          return _GradientePlaceholder(params: widget.params);
+        }
+        final item = engine.getConteudoDeHoje();
+        return ImageFiltered(
+          imageFilter: ImageFilter.blur(
+            sigmaX: widget.blurSigma,
+            sigmaY: widget.blurSigma,
+            tileMode: TileMode.decal,
+          ),
+          child: Transform.scale(
+            scale: widget.scale,
+            child: Image.asset(
+              item.assetPath,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  _GradientePlaceholder(params: widget.params),
+            ),
+          ),
+        );
       },
     );
   }
