@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nome exibido do app. Este arquivo (values/, sem qualificador de
+         idioma) é o padrão/fallback — usado em qualquer idioma que não
+         tenha uma pasta específica (ex: values-en/). -->
+    <string name="app_name">Calendário</string>
+</resources>
