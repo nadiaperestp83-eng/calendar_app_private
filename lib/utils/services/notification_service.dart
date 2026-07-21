@@ -18,15 +18,15 @@ class NotificationService {
   static const AndroidNotificationDetails androidNotificationDetails =
       AndroidNotificationDetails(
     "eventNotification",
-    "Etkinlik Bildirimleri",
+    "Notificações de Eventos",
     channelDescription:
-        "Yaklaşan etkinlik bildirimleri bu kanal üzerinden iletilir.",
+        "Notificações de eventos próximos são enviadas por este canal.",
     importance: Importance.high,
     priority: Priority.high,
     actions: [
       AndroidNotificationAction(
         "ok",
-        "Tamam",
+        "OK",
         cancelNotification: true,
       ),
     ],
@@ -81,13 +81,20 @@ class NotificationService {
     final int id = parseNotificationId(eventId);
 
     final reminderTime = startsAt.subtract(Duration(minutes: remindAt));
+
+    // Se o horário do lembrete já passou (ex: evento criado em cima da
+    // hora, ou editado pra um horário próximo demais), não adianta
+    // agendar — o plugin lançaria erro ou disparava na hora, o que não
+    // é o comportamento esperado de um "lembrete".
+    if (reminderTime.isBefore(DateTime.now())) return false;
+
     final convertedReminderTime = tz.TZDateTime.from(reminderTime, tz.local);
 
     try {
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         id,
-        "Etkinliğiniz yaklaşıyor",
-        '"$eventName" adlı etkinliğinize $remindAt dakika kaldı.',
+        "Seu evento está chegando",
+        '"$eventName" começa em $remindAt minutos.',
         convertedReminderTime,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.alarmClock,
