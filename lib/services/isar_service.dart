@@ -2,6 +2,12 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/evento.dart';
+import '../utils/services/notification_service.dart';
+
+/// Quantos minutos antes do evento a notificação dispara, quando o
+/// evento não tem um horário de lembrete próprio configurado. 30 min é
+/// o padrão mais comum em apps de calendário (Google Calendar, etc).
+const int _kLembreteMinutosPadrao = 30;
 
 /// Serviço responsável por todo o acesso ao banco Isar local.
 ///
@@ -41,6 +47,23 @@ class IsarService {
     await isar.writeTxn(() async {
       id = await isar.eventos.put(evento);
     });
+
+    // Agenda (ou reagenda, se for edição — o plugin substitui qualquer
+    // notificação pendente com o mesmo id) o lembrete via alarme nativo
+    // do Android. Se o usuário desligou "notificar" neste evento (ou
+    // editou um evento que tinha notificação ligada e desligou),
+    // cancela qualquer lembrete que já estivesse marcado pra ele.
+    if (evento.notificar) {
+      await NotificationService.i.scheduleNotification(
+        eventId: id.toString(),
+        eventName: evento.titulo,
+        startsAt: evento.dataHoraInicio,
+        remindAt: _kLembreteMinutosPadrao,
+      );
+    } else {
+      await NotificationService.i.cancelNotification(eventId: id.toString());
+    }
+
     return id;
   }
 
@@ -60,6 +83,11 @@ class IsarService {
     await isar.writeTxn(() async {
       removido = await isar.eventos.delete(id);
     });
+
+    if (removido) {
+      await NotificationService.i.cancelNotification(eventId: id.toString());
+    }
+
     return removido;
   }
 
