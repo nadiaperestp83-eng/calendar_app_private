@@ -5,6 +5,7 @@ import 'screens/home_screen.dart';
 import 'services/isar_service.dart';
 import 'shaders/landscape_shader_controller.dart';
 import 'theme/app_design_tokens.dart';
+import 'utils/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,11 @@ void main() async {
   // Abre o banco local ANTES de renderizar a UI.
   // Nenhuma chamada de rede acontece aqui — 100% offline.
   await IsarService.instance.db;
+
+  // Inicializa o serviço de notificações (pede permissão no Android 13+
+  // e prepara os fusos horários) ANTES de qualquer evento poder ser
+  // criado/editado, já que IsarService.add() agenda notificação na hora.
+  await NotificationService.i.init();
 
   // Compila o fragment shader da paisagem procedural durante o boot, para
   // que o HeroDayCard já apareça pronto no primeiro frame (sem o
