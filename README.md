@@ -12,9 +12,12 @@ and set reminders. Reminders will pop up event the app isn't running, so you won
 Project itself is self-hostable. You can deploy it to any server you want. You will own your own data - not someone else,
 even us.
 
-You can see the server software of this application [here.](https://github.com/berkakkaya/calendar_app_server)
 
-# Development
+
+# Development and Packeges
+
+-nature_dayly (created by me)
+-daily_quotes (fixed updated by me)
 
 Firstly, you need to clone the repo.
 ```bash
