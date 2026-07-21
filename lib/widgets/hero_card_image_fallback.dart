@@ -58,6 +58,13 @@ class HeroCardImageFallback extends StatelessWidget {
       children: [
         Image.asset(
           item.assetPath,
+          // OBRIGATÓRIO: assets declarados no pubspec.yaml de um pacote
+          // (não do app) só são encontrados se você disser de qual
+          // pacote — sem isso o Flutter procura o caminho dentro dos
+          // assets do app `calendar_app_private`, não encontra, e cai
+          // silenciosamente no errorBuilder abaixo. Foi esse o bug das
+          // imagens não aparecerem.
+          package: 'nature_daily',
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             // Asset ausente/corrompido no pacote — cai pro gradiente do
