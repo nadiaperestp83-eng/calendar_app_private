@@ -1,6 +1,6 @@
 # Calendar App
 
-Mobile app for the Calendar App. This project was made as a final project for Software Making class in our university.
+Mobile app for the Calendar App privacy. This project was made as a final project for Software for better experience.
 
 ![Banner](https://github.com/berkakkaya/calendar_app/assets/31767631/5c9ab735-3ed8-4b2d-9751-723190261977)
 
@@ -36,6 +36,4 @@ flutter run --release
 ```
 
 # Project Team
-- [Berk Akkaya](https://github.com/berkakkaya) - Project Manager, Mobile Application Developer
-- [İrem Akkın](https://github.com/iremakkin) - Backend Developer
-- [Kemal Beydilli](https://github.com/beydillik) - Backend Developer
+- Layla Mansur
