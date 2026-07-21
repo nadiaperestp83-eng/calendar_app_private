@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Usado automaticamente pelo Android quando o idioma do sistema
+         é inglês (qualquer variante: en, en-US, en-GB etc). -->
+    <string name="app_name">Calendar</string>
+</resources>
