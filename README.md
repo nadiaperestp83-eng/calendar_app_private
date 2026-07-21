@@ -1,4 +1,4 @@
-# Calendar Privante App
+# Calendar Private App
 
 Some features under development
 
