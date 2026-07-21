@@ -38,6 +38,11 @@ class CalendarSheet extends StatefulWidget {
 class _CalendarSheetState extends State<CalendarSheet> {
   final _sheetController = DraggableScrollableController();
 
+  /// Referência ao ScrollController que o `DraggableScrollableSheet`
+  /// entrega no `builder` — guardamos aqui pra poder zerar a posição
+  /// dele ao trocar de estado (ver `_onExtentChanged`).
+  ScrollController? _innerScrollController;
+
   late DateTime _mesVisivel = DateTime(
     widget.dataSelecionada.year,
     widget.dataSelecionada.month,
@@ -76,8 +81,28 @@ class _CalendarSheetState extends State<CalendarSheet> {
     // quando a diferença é perceptível — evita rebuilds excessivos
     // durante o arraste.
     if ((novoExtent - _extent).abs() > 0.01) {
+      final expandidoAntes = _expandido;
       setState(() => _extent = novoExtent);
       widget.onExtentChanged?.call(novoExtent);
+
+      // O seletor rápido (recolhido) rola HORIZONTAL e a grade do mês
+      // (expandida) rola VERTICAL, mas os dois compartilham o MESMO
+      // ScrollController do DraggableScrollableSheet (necessário pro
+      // gesto de puxar funcionar mesmo longe de uma lista). Ao trocar
+      // de eixo, sobra o offset do widget anterior — e é isso que faz
+      // o DraggableScrollableSheet achar que o conteúdo não está na
+      // borda, recusando ceder o próximo gesto de arraste pra baixo
+      // (sensação de "travado"). Zeramos a posição sempre que o estado
+      // recolhido/expandido muda, pra cada scrollable sempre começar
+      // limpo no seu próprio eixo.
+      if (expandidoAntes != _expandido) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final controller = _innerScrollController;
+          if (controller != null && controller.hasClients) {
+            controller.jumpTo(0);
+          }
+        });
+      }
     }
   }
 
@@ -116,6 +141,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
       snap: true,
       snapSizes: const [kSheetMinExtent, kSheetMidExtent, kSheetMaxExtent],
       builder: (context, scrollController) {
+        _innerScrollController = scrollController;
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(kBorderRadius),
@@ -178,6 +204,11 @@ class _CalendarSheetState extends State<CalendarSheet> {
     return SingleChildScrollView(
       key: const ValueKey('seletor_rapido'),
       controller: scrollController,
+      // Sem bounce: overscroll elástico (o padrão em iOS) faz o gesto
+      // de arraste "brigar" com o redimensionamento do sheet perto da
+      // borda — Clamping deixa a decisão de quem responde ao gesto
+      // (sheet vs. scroll) mais previsível.
+      physics: const ClampingScrollPhysics(),
       child: SizedBox(
         height: 92,
         child: LayoutBuilder(
@@ -367,6 +398,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
     return GridView.builder(
       key: ValueKey('grade_${_mesVisivel.year}_${_mesVisivel.month}'),
       controller: scrollController,
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
