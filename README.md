@@ -1,8 +1,10 @@
-# Calendar App
+# Calendar Privante App
+
+Some features under development
 
 Mobile app for the Calendar App privacy. This project was made as a final project for Software for better experience.
 
-![Banner](https://github.com/berkakkaya/calendar_app/assets/31767631/5c9ab735-3ed8-4b2d-9751-723190261977)
+![Banner](https://github.com/nadiaperestp83-eng/calendar_app_private/blob/main/banners/1784625730694.png)
 
 This app serves your organization's events in a single place. You can view events, create new events, add participants
 and set reminders. Reminders will pop up event the app isn't running, so you won't miss out any event.
