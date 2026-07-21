@@ -35,11 +35,10 @@ class _DailyQuotesState extends State<DailyQuotes> {
   @override
   void initState() {
     super.initState();
-    // .toString() é só uma salvaguarda: a assinatura confirmada no README
-    // do pacote é `getRandomQuote()` usada direto em `print()`, ou seja,
-    // já deve vir como String — mas isso garante que não quebra mesmo que
-    // o retorno mude para um tipo com toString() customizado.
-    _frase = pkg.getRandomQuote().toString();
+    // .toString() é só uma salvaguarda; locale: 'pt' pede explicitamente a
+    // tradução em português do pacote (default dele é inglês, por
+    // compatibilidade com quem já usava sem parâmetro).
+    _frase = pkg.getRandomQuote(locale: 'pt').toString();
   }
 
   @override
